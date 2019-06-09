@@ -21,6 +21,8 @@ const signatureType signatures[] PROGMEM =
   {{ 0x1E, 0x97, 0x6 }, "ATmega1284", 128 * kb, 0x42, 0x99, 0xff},
   {{ 0x1E, 0x91, 0xA }, "ATtiny2313A", 2 * kb, 0, 0, 0}
 };
+signatureType currentSig;
+uint8_t NUMITEMS = sizeof(signatures) / sizeof(signatures[0]);
 
 // programming commands to send via SPI to the chip
 enum {
@@ -52,6 +54,3 @@ enum {
   readEEPROMbyte = 0xA0,
   writeEEPROMbyte = 0xC0
 };
-
-uint8_t NUMITEMS = sizeof(signatures) / sizeof(signatures[0]);
-signatureType currentSig;

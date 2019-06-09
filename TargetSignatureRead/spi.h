@@ -33,13 +33,13 @@ void spi_end();
 void spi_begin(uint8_t rate, uint8_t mode)
 {
   // Set MOSI, SCK, SS outputs
-  DDRB |= _BV(DDB2) | _BV(DDB1) | _BV(DDB0);
+  DDRB |= _BV(PIN_MOSI) | _BV(PIN_SCK) | _BV(PIN_SS);
 
   // Set MISO inputs
-  DDRB &= ~_BV(DDB3);
+  DDRB &= ~_BV(PIN_MISO);
 
   // Set SS to high so a connected chip will be "deselected" by default
-  PORTB |= _BV(PB0);
+  PORTB |= _BV(PIN_SS);
 
   // Set Mode
   SPCR = (SPCR & ~SPI_MODE_MASK) | mode;

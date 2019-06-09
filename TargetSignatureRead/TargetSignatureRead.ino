@@ -1,8 +1,10 @@
 /*
   Arduino Micro target board signature read.
+    base on Nick Gammon sketch
 
   Connect target processor like this:
 
+  ATmega32U4(Leonardo, Micro, etc..)
     D14(MISO)  --> MISO as per datasheet
     D15(SCK)   --> SCK as per datasheet
     D16(MOSI)  --> MOSI as per datasheet
@@ -11,10 +13,14 @@
   Target processor will need +5V and Gnd connected.
 
 */
-#if defined __AVR_ATmega32U4__
+#if !defined __AVR_ATmega32U4__
+#error Unsupported board selection
+#endif
+
 #include "spi.h"
 #include "signature.h"
 #include <util/delay.h>
+#include <avr/interrupt.h>
 
 void setup() {
   Serial.begin(115200);
@@ -33,10 +39,6 @@ void loop() {
 
   readALlFromChip();
 }
-
-#else
-#error Unsupported board selection
-#endif
 
 void readALlFromChip() {
   Serial.println(F("--------- Starting ---------"));
@@ -96,29 +98,35 @@ bool startProgramming() {
 
   uint8_t timeout = 0;
   // we are in sync if we get back pgmAcknowledge on the third byte
-  do
-  {
+  do {
     // regrouping pause
     _delay_ms(100);
 
     // ensure PIN_SCK low
-    noInterrupts();
-    digitalWrite(PIN_SCK, LOW);
+    cli();
+    //noInterrupts();
+    PORTB &= ~_BV(PIN_SCK);
+    //digitalWrite(PIN_SCK, LOW);
 
     // then pulse reset, see page 309 of datasheet
-    digitalWrite(RESET, HIGH);
+    PORTB |= _BV(RESET);
     _delay_us(10);  // pulse for at least 2 clock cycles
-    digitalWrite(RESET, LOW);
-    interrupts();
+    PORTB &= ~_BV(RESET);
+
+    sei();
+    //interrupts();
 
     _delay_ms(25);  // wait at least 20 mS
-    noInterrupts();
+    cli();
+    //noInterrupts();
 
     spi_transmit(pgmEnable);
     spi_transmit(pgmAcknowledge);
-    confirm = spi_transmit(0);
-    spi_transmit(0);
-    interrupts();
+    confirm = spi_transmit(0x0);
+    spi_transmit(0x0);
+
+    sei();
+    //interrupts();
 
     if (confirm != pgmAcknowledge) {
       Serial.print(".");
@@ -139,11 +147,14 @@ bool startProgramming() {
 void stopProgramming() {
   spi_end();
   // We're about to take the target out of reset so configure SPI pins as input
-  pinMode(PIN_MOSI, INPUT);
-  pinMode(PIN_SCK, INPUT);
+  DDRB &= ~(_BV(PIN_MOSI) | _BV(PIN_SCK));
+  //pinMode(PIN_MOSI, INPUT);
+  //pinMode(PIN_SCK, INPUT);
 
-  digitalWrite(RESET, LOW);
-  pinMode(RESET, INPUT);
+  PORTB &= ~_BV(RESET);
+  //digitalWrite(RESET, LOW);
+  DDRB &= ~_BV(RESET);
+  //pinMode(RESET, INPUT);
 
   Serial.println(F("Programming mode off."));
 }
